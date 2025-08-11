@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Route } from "./+types/home";
+import { buildApiUrl, API_CONFIG } from "../config/api";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -41,7 +42,7 @@ export default function Home() {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/auth/check', {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.CHECK), {
         credentials: 'include'
       });
       
@@ -65,7 +66,7 @@ export default function Home() {
   const fetchStats = async () => {
     try {
       // Obtener estadísticas de solicitudes
-      const solicitudesResponse = await fetch('http://localhost:3000/api/solicitudes', {
+      const solicitudesResponse = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.SOLICITUDES.BASE), {
         credentials: 'include'
       });
       
@@ -86,7 +87,7 @@ export default function Home() {
       }
 
       // Obtener estadísticas de libros
-      const librosResponse = await fetch('http://localhost:3000/api/libros', {
+      const librosResponse = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.LIBROS.BASE), {
         credentials: 'include'
       });
       
@@ -109,7 +110,7 @@ export default function Home() {
     setLoginError("");
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.LOGIN), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +135,7 @@ export default function Home() {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:3000/api/auth/logout', {
+      await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.LOGOUT), {
         method: 'POST',
         credentials: 'include'
       });
