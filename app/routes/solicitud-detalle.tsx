@@ -239,6 +239,10 @@ export default function SolicitudDetalle() {
               <i className="fas fa-book me-1"></i>
               Libros
             </a>
+            <a className="nav-link" href="/comparar-pdfs" style={{ color: '#666' }}>
+              <i className="fas fa-file-pdf me-1"></i>
+              Comparar PDFs
+            </a>
           </div>
         </div>
       </nav>

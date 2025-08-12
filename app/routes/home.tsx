@@ -264,6 +264,10 @@ export default function Home() {
               <i className="fas fa-book me-1"></i>
               Libros
             </a>
+            <a className="nav-link text-white" href="/comparar-pdfs">
+              <i className="fas fa-file-pdf me-1"></i>
+              Comparar PDFs
+            </a>
             <button
               className="btn btn-outline-light ms-2"
               onClick={handleLogout}
@@ -339,7 +343,7 @@ export default function Home() {
 
         {/* Quick Actions */}
         <div className="row">
-          <div className="col-md-6 mb-4">
+          <div className="col-md-4 mb-4">
             <div className="card border-0 shadow-sm">
               <div className="card-header" style={{backgroundColor: '#FD8200', color: 'white'}}>
                 <h5 className="mb-0">
@@ -357,7 +361,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="col-md-6 mb-4">
+          <div className="col-md-4 mb-4">
             <div className="card border-0 shadow-sm">
               <div className="card-header" style={{backgroundColor: '#FD8200', color: 'white'}}>
                 <h5 className="mb-0">
@@ -370,6 +374,24 @@ export default function Home() {
                 <a href="/libros" className="btn" style={{backgroundColor: '#FD8200', color: 'white'}}>
                   <i className="fas fa-arrow-right me-1"></i>
                   Ver Libros
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-md-4 mb-4">
+            <div className="card border-0 shadow-sm">
+              <div className="card-header" style={{backgroundColor: '#FD8200', color: 'white'}}>
+                <h5 className="mb-0">
+                  <i className="fas fa-file-pdf me-2"></i>
+                  Comparar PDFs
+                </h5>
+              </div>
+              <div className="card-body">
+                <p className="card-text">Carga y compara archivos PDF para encontrar coincidencias por nombre de comisión.</p>
+                <a href="/comparar-pdfs" className="btn" style={{backgroundColor: '#FD8200', color: 'white'}}>
+                  <i className="fas fa-arrow-right me-1"></i>
+                  Comparar PDFs
                 </a>
               </div>
             </div>
