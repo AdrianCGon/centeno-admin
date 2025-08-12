@@ -1,23 +1,12 @@
-// Función para detectar el entorno de forma segura
-const getBaseUrl = (): string => {
-  // Solo ejecutar en el cliente (navegador)
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:3000';
-    } else {
-      return 'http://143.198.185.191:3000';
-    }
-  }
-  
-  // Valor por defecto para SSR
-  return 'http://localhost:3000';
-};
+// Configuración de APIs - Cambiar aquí para cambiar el entorno
+const IS_PRODUCTION = true; // Cambiar a true para producción
 
 // Configuración de APIs para desarrollo y producción
 export const API_CONFIG = {
   // URLs base para las APIs
-  BASE_URL: getBaseUrl(),
+  BASE_URL: IS_PRODUCTION 
+    ? 'http://143.198.185.191:3000' 
+    : 'http://localhost:3000',
   
   // Endpoints específicos
   ENDPOINTS: {
@@ -45,5 +34,7 @@ export const buildApiUrl = (endpoint: string): string => {
   return `${API_CONFIG.BASE_URL}${endpoint}`;
 };
 
-// Función helper para obtener la URL base (exportada para uso externo)
-export { getBaseUrl }; 
+// Función helper para obtener la URL base
+export const getBaseUrl = (): string => {
+  return API_CONFIG.BASE_URL;
+}; 

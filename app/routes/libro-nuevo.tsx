@@ -17,7 +17,7 @@ export default function LibroNuevo() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await fetch('http://localhost:3000/api/libros', {
+    await fetch('http://143.198.185.191:3000/api/libros', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',

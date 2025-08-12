@@ -57,7 +57,7 @@ export default function Solicitudes() {
   const fetchSolicitudes = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:3000/api/solicitudes', {
+      const response = await fetch('http://143.198.185.191:3000/api/solicitudes', {
         credentials: 'include'
       });
       
@@ -129,7 +129,7 @@ export default function Solicitudes() {
 
   const updateEstado = async (id: string, nuevoEstado: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/solicitudes/${id}/estado`, {
+      const response = await fetch(`http://143.198.185.191:3000/api/solicitudes/${id}/estado`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

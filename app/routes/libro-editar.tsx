@@ -14,7 +14,7 @@ export default function LibroEditar() {
 
   useEffect(() => {
     const load = async () => {
-      const res = await fetch(`http://localhost:3000/api/libros/${id}`, {
+      const res = await fetch(`http://143.198.185.191:3000/api/libros/${id}`, {
         credentials: 'include'
       });
       const data = await res.json();

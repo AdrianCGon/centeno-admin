@@ -25,7 +25,7 @@ export default function Libros() {
 
   const fetchLibros = async () => {
     setIsLoading(true);
-    const res = await fetch('http://localhost:3000/api/libros', {
+    const res = await fetch('http://143.198.185.191:3000/api/libros', {
       credentials: 'include'
     });
     const data = await res.json();
@@ -43,7 +43,7 @@ export default function Libros() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar libro?')) return;
-    await fetch(`http://localhost:3000/api/libros/${id}`, { 
+    await fetch(`http://143.198.185.191:3000/api/libros/${id}`, { 
       method: 'DELETE',
       credentials: 'include'
     });
