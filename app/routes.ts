@@ -7,4 +7,5 @@ export default [
   route("/libros", "routes/libros.tsx"),
   route("/libros/nuevo", "routes/libro-nuevo.tsx"),
   route("/libros/:id", "routes/libro-editar.tsx"),
+  route("*", "routes/404.tsx"), // Ruta catch-all para manejar rutas no encontradas
 ] satisfies RouteConfig;

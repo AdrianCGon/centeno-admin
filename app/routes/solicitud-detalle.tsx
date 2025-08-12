@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router";
 import type { Route } from "./+types/solicitud-detalle";
+import { buildApiUrl, API_CONFIG, getBaseUrl } from "../config/api";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -81,7 +82,7 @@ export default function SolicitudDetalle() {
       
       try {
         setIsLoading(true);
-        const response = await fetch(`http://143.198.185.191:3000/api/solicitudes/${id}`, {
+        const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.SOLICITUDES.BY_ID(id)), {
           credentials: 'include'
         });
         
@@ -116,7 +117,7 @@ export default function SolicitudDetalle() {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await fetch('http://143.198.185.191:3000/api/libros', {
+        const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.LIBROS.BASE), {
           credentials: 'include'
         });
         if (response.ok) {
@@ -157,7 +158,7 @@ export default function SolicitudDetalle() {
     if (!solicitud) return;
     
     try {
-      const response = await fetch(`http://143.198.185.191:3000/api/solicitudes/${solicitud.id}/estado`, {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.SOLICITUDES.UPDATE_ESTADO(solicitud.id)), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -462,7 +463,7 @@ export default function SolicitudDetalle() {
                           
                           const fileName = path.split('/').pop() || 'archivo.pdf';
                           const relativePath = path.replace(/^public\//, '');
-                          const fileUrl = `http://143.198.185.191:3000/${relativePath}`;
+                          const fileUrl = `${getBaseUrl()}/${relativePath}`;
                           
                           return (
                             <div key={num} className="col-md-4 mb-3">
@@ -537,7 +538,7 @@ export default function SolicitudDetalle() {
                           <div className="col-md-4">
                             <div className="d-grid gap-2">
                               <a 
-                                href={`http://143.198.185.191:3000/uploads/comprobantes/${solicitud.comprobantePath.split('/').pop()}`} 
+                                href={`${getBaseUrl()}/uploads/comprobantes/${solicitud.comprobantePath.split('/').pop()}`} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="btn btn-outline-primary btn-sm"
@@ -546,7 +547,7 @@ export default function SolicitudDetalle() {
                                 Ver Comprobante
                               </a>
                               <a 
-                                href={`http://localhost:3000/uploads/comprobantes/${solicitud.comprobantePath.split('/').pop()}`} 
+                                href={`${getBaseUrl()}/uploads/comprobantes/${solicitud.comprobantePath.split('/').pop()}`} 
                                 download={solicitud.comprobantePath.split('/').pop()}
                                 className="btn btn-outline-success btn-sm"
                               >

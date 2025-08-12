@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Route } from "./+types/solicitudes";
+import { buildApiUrl, API_CONFIG } from "../config/api";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -57,7 +58,7 @@ export default function Solicitudes() {
   const fetchSolicitudes = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://143.198.185.191:3000/api/solicitudes', {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.SOLICITUDES.BASE), {
         credentials: 'include'
       });
       
@@ -129,7 +130,7 @@ export default function Solicitudes() {
 
   const updateEstado = async (id: string, nuevoEstado: string) => {
     try {
-      const response = await fetch(`http://143.198.185.191:3000/api/solicitudes/${id}/estado`, {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.SOLICITUDES.UPDATE_ESTADO(id)), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

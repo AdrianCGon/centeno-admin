@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Route } from './+types/libro-nuevo';
+import { buildApiUrl, API_CONFIG } from '../config/api';
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: 'Nuevo Libro - Admin' }];
@@ -17,7 +18,7 @@ export default function LibroNuevo() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await fetch('http://143.198.185.191:3000/api/libros', {
+    await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.LIBROS.BASE), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',

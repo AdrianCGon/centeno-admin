@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Route } from './+types/libros';
+import { buildApiUrl, API_CONFIG } from '../config/api';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -25,7 +26,7 @@ export default function Libros() {
 
   const fetchLibros = async () => {
     setIsLoading(true);
-    const res = await fetch('http://143.198.185.191:3000/api/libros', {
+    const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.LIBROS.BASE), {
       credentials: 'include'
     });
     const data = await res.json();
@@ -43,7 +44,7 @@ export default function Libros() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar libro?')) return;
-    await fetch(`http://143.198.185.191:3000/api/libros/${id}`, { 
+    await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.LIBROS.BY_ID(id)), { 
       method: 'DELETE',
       credentials: 'include'
     });

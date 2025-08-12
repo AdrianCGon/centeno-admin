@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import type { Route } from './+types/libro-editar';
+import { buildApiUrl, API_CONFIG } from '../config/api';
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: 'Editar Libro - Admin' }];
@@ -14,7 +15,7 @@ export default function LibroEditar() {
 
   useEffect(() => {
     const load = async () => {
-      const res = await fetch(`http://143.198.185.191:3000/api/libros/${id}`, {
+      const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.LIBROS.BY_ID(id!)), {
         credentials: 'include'
       });
       const data = await res.json();
@@ -33,7 +34,7 @@ export default function LibroEditar() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await fetch(`http://localhost:3000/api/libros/${id}`, {
+    await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.LIBROS.BY_ID(id!)), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
