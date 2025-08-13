@@ -7,6 +7,7 @@ export default [
   route("/libros", "routes/libros.tsx"),
   route("/libros/nuevo", "routes/libro-nuevo.tsx"),
   route("/libros/:id", "routes/libro-editar.tsx"),
-  route("/comparar-pdfs", "routes/comparar-pdfs.tsx"), // Nueva ruta para comparar PDFs
+  route("/comparar-excel", "routes/comparar-excel.tsx"), // Nueva ruta para comparar archivos Excel
+  route("/comisiones", "routes/comisiones.tsx"), // Nueva ruta para gestionar comisiones
   route("*", "routes/404.tsx"), // Ruta catch-all para manejar rutas no encontradas
 ] satisfies RouteConfig;

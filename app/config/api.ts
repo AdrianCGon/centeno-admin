@@ -1,5 +1,5 @@
 // Configuración de APIs - Cambiar aquí para cambiar el entorno
-const IS_PRODUCTION = true; // Cambiar a true para producción
+const IS_PRODUCTION = false; // Cambiar a true para producción
 
 // Configuración de APIs para desarrollo y producción
 export const API_CONFIG = {
@@ -28,6 +28,15 @@ export const API_CONFIG = {
     HEALTH: '/api/health',
     PDF: {
       COMPARE: '/api/pdf/compare'
+    },
+    EXCEL: {
+      COMPARE: '/api/excel/compare'
+    },
+    COMISIONES: {
+      BASE: '/api/comisiones',
+      BY_ID: (id: string) => `/api/comisiones/${id}`,
+      UPDATE_REALIZADA: (id: string) => `/api/comisiones/${id}/realizada`,
+      DELETE_ALL: '/api/comisiones/all'
     }
   }
 };

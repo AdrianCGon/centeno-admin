@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
-import type { Route } from './+types/comparar-pdfs';
+import { useState, useRef, useCallback } from 'react';
+import type { Route } from './+types/comparar-excel';
 import { buildApiUrl, API_CONFIG } from '../config/api';
+import { ComisionService, type CreateComisionRequest } from '../services/comision.service';
+import { Navigation } from '../components/Navigation';
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: 'Comparar Archivos Excel - Admin' }];
@@ -35,20 +37,28 @@ export default function CompararPDFs() {
   const [error, setError] = useState<string | null>(null);
   const [progreso, setProgreso] = useState<string>('');
   const [estadisticas, setEstadisticas] = useState<{
-    archivo1: { total: number; nombre: string };
-    archivo2: { total: number; nombre: string };
+    archivo1: { total: number; nombre: string; comisiones: Comision[] };
+    archivo2: { total: number; nombre: string; comisiones: Comision[] };
     coincidencias: number;
   } | null>(null);
+  
+  // Estados para guardar comisiones
+  const [mostrarFormularioGuardar, setMostrarFormularioGuardar] = useState(false);
+  const [comisionSeleccionada, setComisionSeleccionada] = useState<MatchResult | null>(null);
+  const [formData, setFormData] = useState<CreateComisionRequest>({
+    periodo: '',
+    actividad: '',
+    modalidad: '',
+    docente: '',
+    horario: '',
+    aula: '',
+    comision: ''
+  });
   
   const fileInput1Ref = useRef<HTMLInputElement>(null);
   const fileInput2Ref = useRef<HTMLInputElement>(null);
 
-  // Debug: Monitorear cambios en resultados
-  useEffect(() => {
-    console.log('Estado resultados actualizado:', resultados);
-  }, [resultados]);
-
-  const handleFileChange = (setter: (file: File | null) => void, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((setter: (file: File | null) => void, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && (file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
                  file.type === 'application/vnd.ms-excel' ||
@@ -60,9 +70,9 @@ export default function CompararPDFs() {
       setError('Por favor selecciona un archivo Excel válido (.xlsx o .xls)');
       setter(null);
     }
-  };
+  }, []);
 
-  const limpiarArchivos = () => {
+  const limpiarArchivos = useCallback(() => {
     setArchivo1(null);
     setArchivo2(null);
     setResultados([]);
@@ -70,12 +80,12 @@ export default function CompararPDFs() {
     setError(null);
     setProgreso('');
     if (fileInput1Ref.current) fileInput1Ref.current.value = '';
-    if (fileInput2Ref.current) fileInput2.current.value = '';
-  };
+    if (fileInput2Ref.current) fileInput2Ref.current.value = '';
+  }, []);
 
-  const procesarPDFs = async () => {
+  const procesarPDFs = useCallback(async () => {
     if (!archivo1 || !archivo2) {
-      setError('Por favor selecciona ambos archivos PDF');
+      setError('Por favor selecciona ambos archivos Excel');
       return;
     }
 
@@ -101,27 +111,25 @@ export default function CompararPDFs() {
         throw new Error(`Error del servidor: ${response.status}`);
       }
 
-      setProgreso('Procesando PDFs...');
+      setProgreso('Procesando archivos Excel...');
       
       const data = await response.json();
-      console.log('Respuesta del servidor:', data); // Debug log
       
       if (data.success) {
-        console.log('Matches encontrados:', data.matches); // Debug log
-        console.log('Longitud de matches:', data.matches?.length); // Debug log
-        
         const matches = data.matches || [];
         setResultados(matches);
         
         // Extraer estadísticas de los resultados
         const archivo1Stats = {
-          total: matches.filter(m => m.archivo1.archivo !== 'N/A').length,
-          nombre: archivo1.name
+          total: matches.filter((m: MatchResult) => m.archivo1.archivo !== 'N/A').length,
+          nombre: archivo1.name,
+          comisiones: data.archivo1?.comisiones || []
         };
         
         const archivo2Stats = {
-          total: matches.filter(m => m.archivo2.archivo !== 'N/A').length,
-          nombre: archivo2.name
+          total: matches.filter((m: MatchResult) => m.archivo2.archivo !== 'N/A').length,
+          nombre: archivo2.name,
+          comisiones: data.archivo2?.comisiones || []
         };
         
         setEstadisticas({
@@ -130,10 +138,9 @@ export default function CompararPDFs() {
           coincidencias: matches.length
         });
         
-        console.log('Estado resultados después de setResultados:', matches); // Debug log
         setProgreso(`Procesamiento completado - ${matches.length} coincidencias encontradas`);
       } else {
-        throw new Error(data.message || 'Error al procesar los PDFs');
+        throw new Error(data.message || 'Error al procesar los archivos Excel');
       }
 
     } catch (err) {
@@ -142,9 +149,9 @@ export default function CompararPDFs() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [archivo1, archivo2]);
 
-  const descargarResultados = () => {
+  const descargarResultados = useCallback(() => {
     if (resultados.length === 0) return;
 
     const csvContent = [
@@ -163,37 +170,159 @@ export default function CompararPDFs() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }, [resultados]);
+
+  // Funciones para guardar comisiones
+  const guardarComision = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.periodo || !formData.actividad || !formData.modalidad || 
+        !formData.docente || !formData.horario || !formData.aula || !formData.comision) {
+      alert('Por favor completa todos los campos');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await ComisionService.create(formData);
+      alert('Comisión guardada exitosamente');
+      setMostrarFormularioGuardar(false);
+      setComisionSeleccionada(null);
+      setFormData({
+        periodo: '',
+        actividad: '',
+        modalidad: '',
+        docente: '',
+        horario: '',
+        aula: '',
+        comision: ''
+      });
+    } catch (error) {
+      alert('Error al guardar la comisión: ' + error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [formData]);
+
+  const seleccionarComisionParaGuardar = useCallback((comision: MatchResult) => {
+    setComisionSeleccionada(comision);
+    setFormData({
+      periodo: comision.archivo1.periodoLectivo || comision.archivo2.periodoLectivo || '',
+      actividad: comision.archivo1.actividad || comision.archivo2.actividad || '',
+      modalidad: comision.archivo1.modalidad || comision.archivo2.modalidad || '',
+      docente: comision.archivo1.docente || comision.archivo2.docente || '',
+      horario: comision.archivo1.horario || comision.archivo2.horario || '',
+      aula: comision.archivo1.aula || comision.archivo2.aula || '',
+      comision: comision.archivo1.comision || comision.archivo2.comision || ''
+    });
+    setMostrarFormularioGuardar(true);
+  }, []);
+
+  const guardarTodasComisionesArchivo1 = useCallback(async () => {
+    if (!resultados || resultados.length === 0) {
+      alert('No hay resultados para guardar');
+      return;
+    }
+
+    if (!confirm(`¿Estás seguro de que quieres guardar ${resultados.length} comisiones del archivo 1?`)) {
+      return;
+    }
+
+    setIsLoading(true);
+    let guardadas = 0;
+    let errores = 0;
+
+    try {
+      for (const resultado of resultados) {
+        try {
+          // Log de debug para ver qué datos tiene el resultado
+          console.log('🔍 Resultado a guardar:', resultado);
+          console.log('🔍 Tipo de resultado:', typeof resultado);
+          console.log('🔍 Tipo de resultado.archivo1:', typeof resultado.archivo1);
+          console.log('🔍 resultado.archivo1 completo:', resultado.archivo1);
+          console.log('🏫 Campo aula del resultado:', resultado.archivo1.aula);
+          console.log('🔢 Campo comision del resultado:', resultado.archivo1.comision);
+          console.log('🔢 Tipo del campo comision:', typeof resultado.archivo1.comision);
+          console.log('🔢 Longitud del campo comision:', resultado.archivo1.comision ? resultado.archivo1.comision.length : 'undefined');
+          console.log('📋 Todos los campos del archivo1:', {
+            periodoLectivo: resultado.archivo1.periodoLectivo,
+            actividad: resultado.archivo1.actividad,
+            modalidad: resultado.archivo1.modalidad,
+            docente: resultado.archivo1.docente,
+            horario: resultado.archivo1.horario,
+            aula: resultado.archivo1.aula,
+            comision: resultado.archivo1.comision
+          });
+
+          const datosComision = {
+            periodo: resultado.archivo1.periodoLectivo || '',
+            actividad: resultado.archivo1.actividad || '',
+            modalidad: resultado.archivo1.modalidad || '',
+            docente: resultado.archivo1.docente || '',
+            horario: resultado.archivo1.horario || '',
+            aula: resultado.archivo1.aula || '',
+            comision: resultado.archivo1.comision || ''
+          };
+
+          // Log de debug para ver qué datos se van a enviar
+          console.log('📤 Datos que se van a enviar:', datosComision);
+
+          // Verificar cada campo individualmente
+          console.log('🔍 Verificación de campos:');
+          console.log('  - periodo:', datosComision.periodo ? '✅' : '❌');
+          console.log('  - actividad:', datosComision.actividad ? '✅' : '❌');
+          console.log('  - modalidad:', datosComision.modalidad ? '✅' : '❌');
+          console.log('  - docente:', datosComision.docente ? '✅' : '❌');
+          console.log('  - horario:', datosComision.horario ? '✅' : '❌');
+          console.log('  - aula:', datosComision.aula ? '✅' : '❌');
+          console.log('  - comision:', datosComision.comision ? '✅' : '❌');
+
+          // Verificar que todos los campos requeridos estén presentes
+          if (datosComision.periodo && datosComision.actividad && datosComision.modalidad && 
+              datosComision.docente && datosComision.horario && datosComision.aula && datosComision.comision) {
+            console.log('✅ Todos los campos están presentes, guardando comisión...');
+            await ComisionService.create(datosComision);
+            guardadas++;
+            console.log('✅ Comisión guardada exitosamente');
+          } else {
+            errores++;
+            console.log('❌ Comisión omitida por campos faltantes:', datosComision);
+            
+            // Mostrar qué campos específicos están faltando
+            const camposFaltantes = [];
+            if (!datosComision.periodo) camposFaltantes.push('periodo');
+            if (!datosComision.actividad) camposFaltantes.push('actividad');
+            if (!datosComision.modalidad) camposFaltantes.push('modalidad');
+            if (!datosComision.docente) camposFaltantes.push('docente');
+            if (!datosComision.horario) camposFaltantes.push('horario');
+            if (!datosComision.aula) camposFaltantes.push('aula');
+            if (!datosComision.comision) camposFaltantes.push('comision');
+            
+            console.log('❌ Campos faltantes:', camposFaltantes);
+          }
+        } catch (error) {
+          errores++;
+          console.error('❌ Error al guardar comisión:', error);
+        }
+      }
+
+      alert(`Proceso completado:\n- Comisiones guardadas: ${guardadas}\n- Errores: ${errores}`);
+      
+      if (guardadas > 0) {
+        // Limpiar la lista de resultados guardados
+        setResultados([]);
+      }
+    } catch (error) {
+      alert('Error general al guardar comisiones: ' + error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [resultados]);
 
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#f5f5f5' }}>
       {/* Navigation Bar */}
-      <nav className="navbar navbar-expand-lg" style={{ backgroundColor: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-        <div className="container-fluid">
-          <a className="navbar-brand" href="/" style={{ color: '#333', fontWeight: 'bold' }}>
-            <i className="fas fa-print me-2" style={{ color: '#FD8200' }}></i>
-            Centeno Admin
-          </a>
-          <div className="navbar-nav ms-auto">
-            <a className="nav-link" href="/" style={{ color: '#666' }}>
-              <i className="fas fa-home me-1"></i>
-              Dashboard
-            </a>
-            <a className="nav-link" href="/solicitudes" style={{ color: '#666' }}>
-              <i className="fas fa-file-alt me-1"></i>
-              Solicitudes
-            </a>
-            <a className="nav-link" href="/libros" style={{ color: '#666' }}>
-              <i className="fas fa-book me-1"></i>
-              Libros
-            </a>
-            <a className="nav-link active" href="/comparar-pdfs" style={{ color: '#FD8200', fontWeight: 'bold' }}>
-              <i className="fas fa-file-pdf me-1"></i>
-              Comparar PDFs
-            </a>
-          </div>
-        </div>
-      </nav>
+      <Navigation currentPage="comparar-excel" />
 
       <div className="container py-4">
         <div className="row">
@@ -211,7 +340,7 @@ export default function CompararPDFs() {
               <div className="card-header bg-primary text-white">
                 <h5 className="mb-0">
                   <i className="fas fa-upload me-2"></i>
-                  Cargar Archivos PDF
+                  Cargar Archivos Excel
                 </h5>
               </div>
               <div className="card-body">
@@ -293,17 +422,6 @@ export default function CompararPDFs() {
                     </div>
                   </div>
                 )}
-
-                {/* Debug: Mostrar estado actual */}
-                <div className="mt-3">
-                  <div className="alert alert-warning mb-0">
-                    <i className="fas fa-bug me-2"></i>
-                    <strong>Debug:</strong> Estado actual - Archivo1: {archivo1?.name || 'No seleccionado'}, 
-                    Archivo2: {archivo2?.name || 'No seleccionado'}, 
-                    Resultados: {resultados.length}, 
-                    Loading: {isLoading ? 'Sí' : 'No'}
-                  </div>
-                </div>
 
                 {error && (
                   <div className="mt-3">
@@ -444,13 +562,22 @@ export default function CompararPDFs() {
                               </div>
                             </td>
                             <td>
-                              <button 
-                                className="btn btn-sm btn-outline-info" 
-                                onClick={() => alert(`Detalles de ${resultado.comision}`)}
-                                title="Ver detalles"
-                              >
-                                <i className="fas fa-info-circle"></i>
-                              </button>
+                              <div className="btn-group btn-group-sm" role="group">
+                                <button 
+                                  className="btn btn-outline-info" 
+                                  onClick={() => alert(`Detalles de ${resultado.comision}`)}
+                                  title="Ver detalles"
+                                >
+                                  <i className="fas fa-info-circle"></i>
+                                </button>
+                                <button 
+                                  className="btn btn-outline-success" 
+                                  onClick={() => seleccionarComisionParaGuardar(resultado)}
+                                  title="Guardar comisión"
+                                >
+                                  <i className="fas fa-save"></i>
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -462,6 +589,30 @@ export default function CompararPDFs() {
                     <p className="text-muted mb-0">
                       Se encontraron <strong>{resultados.length}</strong> coincidencias entre los archivos
                     </p>
+                    
+                    {/* Botón para guardar todas las comisiones del archivo 1 */}
+                    {resultados.length > 0 && (
+                      <div className="mt-3">
+                        <button
+                          className="btn btn-success btn-lg"
+                          onClick={guardarTodasComisionesArchivo1}
+                          disabled={isLoading}
+                          title="Guardar todas las comisiones del archivo 1"
+                        >
+                          {isLoading ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                              Guardando...
+                            </>
+                          ) : (
+                            <>
+                              <i className="fas fa-save me-2"></i>
+                              Guardar Todas las Comisiones del Archivo 1 ({resultados.length})
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -469,6 +620,119 @@ export default function CompararPDFs() {
           </div>
         </div>
       </div>
+
+      {/* Modal para guardar comisión individual */}
+      {mostrarFormularioGuardar && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  <i className="fas fa-save me-2"></i>
+                  Guardar Comisión
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setMostrarFormularioGuardar(false)}
+                ></button>
+              </div>
+              <form onSubmit={guardarComision}>
+                <div className="modal-body">
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <label className="form-label">Período</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.periodo}
+                        onChange={(e) => setFormData({...formData, periodo: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Actividad</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.actividad}
+                        onChange={(e) => setFormData({...formData, actividad: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Modalidad</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.modalidad}
+                        onChange={(e) => setFormData({...formData, modalidad: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Docente</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.docente}
+                        onChange={(e) => setFormData({...formData, docente: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Horario</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.horario}
+                        onChange={(e) => setFormData({...formData, horario: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Aula</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.aula}
+                        onChange={(e) => setFormData({...formData, aula: e.target.value})}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setMostrarFormularioGuardar(false)}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-success"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-save me-2"></i>
+                        Guardar
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

@@ -185,9 +185,9 @@ export default function Solicitudes() {
               <i className="fas fa-book me-1"></i>
               Libros
             </a>
-            <a className="nav-link" href="/comparar-pdfs" style={{ color: '#666' }}>
-              <i className="fas fa-file-pdf me-1"></i>
-              Comparar PDFs
+            <a className="nav-link" href="/comparar-excel" style={{ color: '#666' }}>
+              <i className="fas fa-file-excel me-1"></i>
+              Comparar Archivos Excel
             </a>
           </div>
         </div>

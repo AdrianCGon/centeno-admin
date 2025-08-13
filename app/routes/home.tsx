@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Route } from "./+types/home";
 import { buildApiUrl, API_CONFIG } from "../config/api";
+import { Navigation } from "../components/Navigation";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -249,35 +250,7 @@ export default function Home() {
   return (
     <div className="container-fluid">
       {/* Navigation Bar */}
-      <nav className="navbar navbar-expand-lg" style={{backgroundColor: '#FD8200'}}>
-        <div className="container-fluid">
-          <a className="navbar-brand text-white fw-bold" href="/">
-            <i className="fas fa-shield-alt me-2"></i>
-            Centeno Admin
-          </a>
-          <div className="navbar-nav ms-auto">
-            <a className="nav-link text-white" href="/solicitudes">
-              <i className="fas fa-file-alt me-1"></i>
-              Solicitudes
-            </a>
-            <a className="nav-link text-white" href="/libros">
-              <i className="fas fa-book me-1"></i>
-              Libros
-            </a>
-            <a className="nav-link text-white" href="/comparar-pdfs">
-              <i className="fas fa-file-pdf me-1"></i>
-              Comparar PDFs
-            </a>
-            <button
-              className="btn btn-outline-light ms-2"
-              onClick={handleLogout}
-            >
-              <i className="fas fa-sign-out-alt me-1"></i>
-              Cerrar Sesión
-            </button>
-          </div>
-        </div>
-      </nav>
+      <Navigation currentPage="home" />
 
       {/* Dashboard Content */}
       <div className="container-fluid mt-4">
@@ -342,18 +315,18 @@ export default function Home() {
         </div>
 
         {/* Quick Actions */}
-        <div className="row">
-          <div className="col-md-4 mb-4">
-            <div className="card border-0 shadow-sm">
+        <div className="row mb-4">
+          <div className="col-md-3 mb-4">
+            <div className="card border-0 shadow-sm h-100">
               <div className="card-header" style={{backgroundColor: '#FD8200', color: 'white'}}>
                 <h5 className="mb-0">
                   <i className="fas fa-file-alt me-2"></i>
                   Gestión de Solicitudes
                 </h5>
               </div>
-              <div className="card-body">
-                <p className="card-text">Administra las solicitudes de fotocopias, actualiza estados y agrega observaciones.</p>
-                <a href="/solicitudes" className="btn" style={{backgroundColor: '#FD8200', color: 'white'}}>
+              <div className="card-body d-flex flex-column">
+                <p className="card-text flex-grow-1">Administra las solicitudes de fotocopias, actualiza estados y agrega observaciones.</p>
+                <a href="/solicitudes" className="btn mt-auto" style={{backgroundColor: '#FD8200', color: 'white'}}>
                   <i className="fas fa-arrow-right me-1"></i>
                   Ver Solicitudes
                 </a>
@@ -361,17 +334,17 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="col-md-4 mb-4">
-            <div className="card border-0 shadow-sm">
+          <div className="col-md-3 mb-4">
+            <div className="card border-0 shadow-sm h-100">
               <div className="card-header" style={{backgroundColor: '#FD8200', color: 'white'}}>
                 <h5 className="mb-0">
                   <i className="fas fa-book me-2"></i>
                   Catálogo de Libros
                 </h5>
               </div>
-              <div className="card-body">
-                <p className="card-text">Gestiona el catálogo de libros disponibles, precios y ediciones.</p>
-                <a href="/libros" className="btn" style={{backgroundColor: '#FD8200', color: 'white'}}>
+              <div className="card-body d-flex flex-column">
+                <p className="card-text flex-grow-1">Gestiona el catálogo de libros disponibles, precios y ediciones.</p>
+                <a href="/libros" className="btn mt-auto" style={{backgroundColor: '#FD8200', color: 'white'}}>
                   <i className="fas fa-arrow-right me-1"></i>
                   Ver Libros
                 </a>
@@ -379,19 +352,37 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="col-md-4 mb-4">
-            <div className="card border-0 shadow-sm">
+          <div className="col-md-3 mb-4">
+            <div className="card border-0 shadow-sm h-100">
               <div className="card-header" style={{backgroundColor: '#FD8200', color: 'white'}}>
                 <h5 className="mb-0">
-                  <i className="fas fa-file-pdf me-2"></i>
-                  Comparar PDFs
+                  <i className="fas fa-file-excel me-2"></i>
+                  Comparar Archivos Excel
                 </h5>
               </div>
-              <div className="card-body">
-                <p className="card-text">Carga y compara archivos PDF para encontrar coincidencias por nombre de comisión.</p>
-                <a href="/comparar-pdfs" className="btn" style={{backgroundColor: '#FD8200', color: 'white'}}>
+              <div className="card-body d-flex flex-column">
+                <p className="card-text flex-grow-1">Carga y compara archivos Excel para encontrar coincidencias por nombre de comisión.</p>
+                <a href="/comparar-excel" className="btn mt-auto" style={{backgroundColor: '#FD8200', color: 'white'}}>
                   <i className="fas fa-arrow-right me-1"></i>
-                  Comparar PDFs
+                  Comparar Archivos Excel
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-md-3 mb-4">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header" style={{backgroundColor: '#FD8200', color: 'white'}}>
+                <h5 className="mb-0">
+                  <i className="fas fa-users me-2"></i>
+                  Gestionar Comisiones
+                </h5>
+              </div>
+              <div className="card-body d-flex flex-column">
+                <p className="card-text flex-grow-1">Administra las comisiones extraídas de archivos Excel, actualiza estados y gestiona la información académica.</p>
+                <a href="/comisiones" className="btn mt-auto" style={{backgroundColor: '#FD8200', color: 'white'}}>
+                  <i className="fas fa-arrow-right me-1"></i>
+                  Gestionar Comisiones
                 </a>
               </div>
             </div>
