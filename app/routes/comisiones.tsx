@@ -232,6 +232,22 @@ export default function Comisiones() {
   const comisionesFiltradasYOrdenadas = () => {
     let resultado = [...comisiones];
 
+    // Excluir automáticamente registros con aula "N/A"
+    resultado = resultado.filter(c => c.aula !== 'N/A' && c.aula !== 'n/a' && c.aula !== 'N/a');
+
+    // Excluir registros que no tengan formato de horario válido
+    resultado = resultado.filter(c => {
+      const horario = c.horario;
+      // Verificar si el horario tiene formato válido (día + hora)
+      const formatoValido = /^(Lun|Mar|Mie|Jue|Vie|Sab|Dom)\s+\d{1,2}:\d{2}/i.test(horario);
+      
+      if (!formatoValido) {
+        console.log(`⚠️ Excluyendo registro con horario inválido: "${horario}"`);
+      }
+      
+      return formatoValido;
+    });
+
     // Aplicar filtros
     if (filtros.periodo) {
       resultado = resultado.filter(c => 
@@ -438,157 +454,157 @@ export default function Comisiones() {
                   </div>
                 </div>
 
-                {/* Tabla de comisiones */}
+                {/* Tabla de comisiones agrupadas por horario */}
                 <div className="table-responsive">
-                  <table className="table table-hover table-sm">
-                    <thead className="table-light">
-                      <tr>
-                        <th 
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => ordenarComisiones('periodo')}
-                        >
-                          Período
-                          {ordenamiento.campo === 'periodo' && (
-                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
-                          )}
-                        </th>
-                        <th 
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => ordenarComisiones('comision')}
-                        >
-                          Comisión
-                          {ordenamiento.campo === 'comision' && (
-                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
-                          )}
-                        </th>
-                        <th 
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => ordenarComisiones('actividad')}
-                        >
-                          Actividad
-                          {ordenamiento.campo === 'actividad' && (
-                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
-                          )}
-                        </th>
-                        <th 
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => ordenarComisiones('modalidad')}
-                        >
-                          Modalidad
-                          {ordenamiento.campo === 'modalidad' && (
-                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
-                          )}
-                        </th>
-                        <th 
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => ordenarComisiones('docente')}
-                        >
-                          Docente
-                          {ordenamiento.campo === 'docente' && (
-                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
-                          )}
-                        </th>
-                        <th 
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => ordenarComisiones('horario')}
-                        >
-                          Horario
-                          {ordenamiento.campo === 'horario' && (
-                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
-                          )}
-                        </th>
-                        <th 
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => ordenarComisiones('aula')}
-                        >
-                          Aula
-                          {ordenamiento.campo === 'aula' && (
-                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
-                          )}
-                        </th>
-                        <th 
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => ordenarComisiones('realizada')}
-                        >
-                          Realizada
-                          {ordenamiento.campo === 'realizada' && (
-                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
-                          )}
-                        </th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {isLoading ? (
-                        <tr>
-                          <td colSpan={9} className="text-center py-4">
-                            <div className="spinner-border text-primary" role="status">
-                              <span className="visually-hidden">Cargando...</span>
+                  {isLoading ? (
+                    <div className="text-center py-4">
+                      <div className="spinner-border text-primary" role="status">
+                        <span className="visually-hidden">Cargando...</span>
+                      </div>
+                    </div>
+                  ) : (
+                    // Agrupar comisiones por horario
+                    (() => {
+                      console.log('🚀 Iniciando agrupación de comisiones...');
+                      console.log('📋 Comisiones a agrupar:', comisionesFiltradasYOrdenadas());
+                      
+                      const comisionesAgrupadas = comisionesFiltradasYOrdenadas().reduce((grupos, comision) => {
+                        const horario = comision.horario;
+                        if (!grupos[horario]) {
+                          grupos[horario] = [];
+                        }
+                        grupos[horario].push(comision);
+                        return grupos;
+                      }, {} as Record<string, typeof comisiones>);
+
+                      console.log('🔍 Comisiones agrupadas por horario:', comisionesAgrupadas);
+
+                      // Ordenar horarios
+                      const horariosOrdenados = Object.keys(comisionesAgrupadas).sort((a, b) => {
+                        // Ordenar por día de la semana y luego por hora
+                        const diasSemana = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
+                        const diaA = a.split(' ')[0];
+                        const diaB = b.split(' ')[0];
+                        const indiceA = diasSemana.indexOf(diaA);
+                        const indiceB = diasSemana.indexOf(diaB);
+                        
+                        if (indiceA !== indiceB) {
+                          return indiceA - indiceB;
+                        }
+                        
+                        // Si es el mismo día, ordenar por hora
+                        const horaA = a.match(/(\d{1,2}):(\d{2})/);
+                        const horaB = b.match(/(\d{1,2}):(\d{2})/);
+                        if (horaA && horaB) {
+                          const minutosA = parseInt(horaA[1]) * 60 + parseInt(horaA[2]);
+                          const minutosB = parseInt(horaB[1]) * 60 + parseInt(horaB[2]);
+                          return minutosA - minutosB;
+                        }
+                        return a.localeCompare(b);
+                      });
+
+                      console.log('🕐 Horarios ordenados:', horariosOrdenados);
+
+                      if (horariosOrdenados.length === 0) {
+                        return <div className="text-center py-4 text-muted">No hay comisiones para mostrar</div>;
+                      }
+
+                      return horariosOrdenados.map(horario => (
+                        <div key={horario} className="mb-4">
+                          <div className="card border-primary">
+                            <div className="card-header bg-primary text-white">
+                              <h6 className="mb-0">
+                                <i className="fas fa-clock me-2"></i>
+                                <strong>{horario}</strong>
+                                <span className="badge bg-light text-primary ms-2">
+                                  {comisionesAgrupadas[horario].length} actividad{comisionesAgrupadas[horario].length !== 1 ? 'es' : ''}
+                                </span>
+                              </h6>
                             </div>
-                          </td>
-                        </tr>
-                      ) : comisionesFiltradasYOrdenadas().length === 0 ? (
-                        <tr>
-                          <td colSpan={9} className="text-center py-4 text-muted">
-                            No se encontraron comisiones
-                          </td>
-                        </tr>
-                      ) : (
-                        comisionesFiltradasYOrdenadas().map((comision) => (
-                          <tr key={comision.id}>
-                            <td>{comision.periodo}</td>
-                            <td>{comision.comision}</td>
-                            <td>{comision.actividad}</td>
-                            <td>{comision.modalidad}</td>
-                            <td>{comision.docente}</td>
-                            <td>{comision.horario}</td>
-                            <td>{comision.aula}</td>
-                            <td>
-                              <input
-                                type="checkbox"
-                                checked={comision.realizada || false}
-                                onChange={(e) => {
-                                  if (!comision.id) {
-                                    console.error('❌ Comisión sin ID:', comision);
-                                    setError('Error: Comisión sin ID válido');
-                                    return;
-                                  }
-                                  handleRealizadaChange(comision.id, e.target.checked);
-                                }}
-                                className="form-check-input"
-                                title={comision.realizada ? 'Marcar como pendiente' : 'Marcar como realizada'}
-                                disabled={!comision.id}
-                              />
-                            </td>
-                            <td>
-                              <div className="btn-group btn-group-sm" role="group">
-                                <button
-                                  className="btn btn-outline-primary"
-                                  onClick={() => editarComision(comision)}
-                                  title="Editar comisión"
-                                >
-                                  <i className="fas fa-edit"></i>
-                                </button>
-                                <button
-                                  className="btn btn-outline-danger"
-                                  onClick={() => eliminarComision(comision.id!)}
-                                  title="Eliminar comisión"
-                                >
-                                  <i className="fas fa-trash"></i>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                            <div className="card-body p-0">
+                              <table className="table table-sm table-hover mb-0">
+                                <thead className="table-light">
+                                  <tr>
+                                    <th>Período</th>
+                                    <th>Actividad</th>
+                                    <th>Aula</th>
+                                    <th>Realizada</th>
+                                    <th>Acciones</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {comisionesAgrupadas[horario].map((comision) => (
+                                    <tr key={comision.id}>
+                                      <td>{comision.periodo}</td>
+                                      <td>{comision.actividad}</td>
+                                      <td>{comision.aula}</td>
+                                      <td>
+                                        <input
+                                          type="checkbox"
+                                          checked={comision.realizada || false}
+                                          onChange={(e) => {
+                                            if (!comision.id) {
+                                              console.error('❌ Comisión sin ID:', comision);
+                                              setError('Error: Comisión sin ID válido');
+                                              return;
+                                            }
+                                            handleRealizadaChange(comision.id, e.target.checked);
+                                          }}
+                                          className="form-check-input"
+                                          title={comision.realizada ? 'Marcar como pendiente' : 'Marcar como realizada'}
+                                          disabled={!comision.id}
+                                        />
+                                      </td>
+                                      <td>
+                                        <div className="btn-group btn-group-sm" role="group">
+                                          <button
+                                            className="btn btn-outline-primary"
+                                            onClick={() => editarComision(comision)}
+                                            title="Editar comisión"
+                                          >
+                                            <i className="fas fa-edit"></i>
+                                          </button>
+                                          <button
+                                            className="btn btn-outline-danger"
+                                            onClick={() => eliminarComision(comision.id!)}
+                                            title="Eliminar comisión"
+                                          >
+                                            <i className="fas fa-trash"></i>
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      ));
+                    })()
+                  )}
                 </div>
 
                 {/* Información de filtros */}
                 <div className="mt-3 text-muted small">
-                  Mostrando {comisionesFiltradasYOrdenadas().length} de {comisiones.length} comisiones
+                  Mostrando {(() => {
+                    const comisionesAgrupadas = comisionesFiltradasYOrdenadas().reduce((grupos, comision) => {
+                      const horario = comision.horario;
+                      if (!grupos[horario]) {
+                        grupos[horario] = [];
+                      }
+                      grupos[horario].push(comision);
+                      return grupos;
+                    }, {} as Record<string, typeof comisiones>);
+                    return Object.keys(comisionesAgrupadas).length;
+                  })()} horarios con {comisionesFiltradasYOrdenadas().length} actividades
                   {Object.values(filtros).some(f => f !== '' && f !== 'todos') && ' (filtradas)'}
+                  {comisiones.filter(c => c.aula === 'N/A' || c.aula === 'n/a' || c.aula === 'N/a').length > 0 && 
+                    ` • ${comisiones.filter(c => c.aula === 'N/A' || c.aula === 'n/a' || c.aula === 'N/a').length} registros con aula N/A ocultos automáticamente`
+                  }
+                  {comisiones.filter(c => !/^(Lun|Mar|Mie|Jue|Vie|Sab|Dom)\s+\d{1,2}:\d{2}/i.test(c.horario)).length > 0 && 
+                    ` • ${comisiones.filter(c => !/^(Lun|Mar|Mie|Jue|Vie|Sab|Dom)\s+\d{1,2}:\d{2}/i.test(c.horario)).length} registros con horario inválido ocultos automáticamente`
+                  }
                 </div>
               </div>
             </div>
