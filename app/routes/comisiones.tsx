@@ -1,6 +1,20 @@
 import { useState, useEffect } from 'react';
 import { ComisionService, type Comision, type CreateComisionRequest } from '../services/comision.service';
 import { Navigation } from '../components/Navigation';
+import React from 'react'; // Added missing import for React
+
+// Estilos CSS personalizados para evitar el hover marrón
+const customStyles = `
+  .custom-orange-header {
+    background-color: #FD8200 !important;
+  }
+  .custom-orange-header:hover {
+    background-color: #FD8200 !important;
+  }
+  .table-warning .custom-orange-header:hover {
+    background-color: #FD8200 !important;
+  }
+`;
 
 export function meta() {
   return [
@@ -15,14 +29,14 @@ export default function Comisiones() {
   const [error, setError] = useState<string | null>(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [comisionEditando, setComisionEditando] = useState<Comision | null>(null);
+  const [vistaAgrupada, setVistaAgrupada] = useState(true); // Nuevo estado para vista agrupada
   const [formData, setFormData] = useState<CreateComisionRequest>({
     periodo: '',
     actividad: '',
     modalidad: '',
     docente: '',
     horario: '',
-    aula: '',
-    comision: ''
+    aula: ''
   });
 
   // Estados para filtros y ordenamiento
@@ -37,9 +51,8 @@ export default function Comisiones() {
     docente: '',
     horario: '',
     aula: '',
-    comision: '',
     realizada: 'todos',
-    dias: [] as string[] // Nuevo filtro para días
+    diaSemana: 'todos' // Nuevo filtro por día de la semana
   });
 
   useEffect(() => {
@@ -53,6 +66,17 @@ export default function Comisiones() {
       const data = await ComisionService.getAll();
       
       console.log('📥 Comisiones cargadas del backend:', data);
+      
+      // Log detallado de cada comisión para debugging
+      data.forEach((comision, index) => {
+        console.log(`🔍 Comisión ${index + 1}:`, {
+          id: comision.id,
+          actividad: comision.actividad,
+          horario: comision.horario,
+          docente: comision.docente,
+          aula: comision.aula
+        });
+      });
       
       // Verificar si las comisiones tienen ID
       const comisionesSinId = data.filter(c => !c.id);
@@ -101,8 +125,7 @@ export default function Comisiones() {
       modalidad: '',
       docente: '',
       horario: '',
-      aula: '',
-      comision: ''
+      aula: ''
     });
   };
 
@@ -114,8 +137,7 @@ export default function Comisiones() {
       modalidad: comision.modalidad,
       docente: comision.docente,
       horario: comision.horario,
-      aula: comision.aula,
-      comision: comision.comision
+      aula: comision.aula
     });
     setMostrarFormulario(true);
   };
@@ -156,14 +178,27 @@ export default function Comisiones() {
       }
       
       console.log(`🔄 Actualizando comisión ${id} a realizada: ${realizada}`);
+      console.log(`🔍 Estado actual de comisiones:`, comisiones);
       
       const comisionActualizada = await ComisionService.updateRealizada(id, realizada);
       
-      console.log(`✅ Comisión actualizada:`, comisionActualizada);
+      console.log(`✅ Comisión actualizada del backend:`, comisionActualizada);
       
-      setComisiones(prev => prev.map(c => 
-        c.id === id ? { ...c, realizada } : c
-      ));
+      // Actualizar estado local
+      setComisiones(prev => {
+        console.log(`🔄 Estado anterior:`, prev);
+        const nuevoEstado = prev.map(c => {
+          if (c.id === id) {
+            console.log(`✅ Actualizando comisión ${id} de realizada: ${c.realizada} a ${realizada}`);
+            return { ...c, realizada };
+          }
+          return c;
+        });
+        console.log(`🔄 Nuevo estado:`, nuevoEstado);
+        return nuevoEstado;
+      });
+      
+      console.log(`✅ Estado local actualizado`);
     } catch (err) {
       console.error('❌ Error al actualizar comisión:', err);
       setError(err instanceof Error ? err.message : 'Error al actualizar el estado de la comisión');
@@ -224,31 +259,14 @@ export default function Comisiones() {
       docente: '',
       horario: '',
       aula: '',
-      comision: '',
       realizada: 'todos',
-      dias: []
+      diaSemana: 'todos'
     });
   };
 
   // Función para aplicar filtros y ordenamiento
   const comisionesFiltradasYOrdenadas = () => {
     let resultado = [...comisiones];
-
-    // Excluir automáticamente registros con aula "N/A"
-    resultado = resultado.filter(c => c.aula !== 'N/A' && c.aula !== 'n/a' && c.aula !== 'N/a');
-
-    // Excluir registros que no tengan formato de horario válido
-    resultado = resultado.filter(c => {
-      const horario = c.horario;
-      // Verificar si el horario tiene formato válido (día + hora)
-      const formatoValido = /^(Lun|Mar|Mie|Jue|Vie|Sab|Dom)\s+\d{1,2}:\d{2}/i.test(horario);
-      
-      if (!formatoValido) {
-        console.log(`⚠️ Excluyendo registro con horario inválido: "${horario}"`);
-      }
-      
-      return formatoValido;
-    });
 
     // Aplicar filtros
     if (filtros.periodo) {
@@ -281,22 +299,24 @@ export default function Comisiones() {
         c.aula.toLowerCase().includes(filtros.aula.toLowerCase())
       );
     }
-    if (filtros.comision) {
-      resultado = resultado.filter(c => 
-        c.comision.toLowerCase().includes(filtros.comision.toLowerCase())
-      );
-    }
     if (filtros.realizada !== 'todos') {
       const realizada = filtros.realizada === 'true';
       resultado = resultado.filter(c => c.realizada === realizada);
     }
-
-    // Aplicar filtros de días
-    if (filtros.dias.length > 0) {
+    
+    // Filtro por día de la semana
+    if (filtros.diaSemana !== 'todos') {
       resultado = resultado.filter(c => {
-        const diaComision = c.horario.split(' ')[0];
-        return filtros.dias.includes(diaComision);
+        // Buscar si el horario contiene el día seleccionado
+        return c.horario.includes(filtros.diaSemana);
       });
+    }
+    
+    // Filtro por horario específico (si se ingresa en el campo horario)
+    if (filtros.horario) {
+      resultado = resultado.filter(c => 
+        c.horario.toLowerCase().includes(filtros.horario.toLowerCase())
+      );
     }
 
     // Aplicar ordenamiento
@@ -324,8 +344,107 @@ export default function Comisiones() {
     return resultado;
   };
 
+  // Función para agrupar comisiones por horario
+  const comisionesAgrupadasPorHorario = () => {
+    const comisionesFiltradas = comisionesFiltradasYOrdenadas();
+    const grupos: { [key: string]: Comision[] } = {};
+
+    console.log('🔍 DEBUG: Comisiones a agrupar:', comisionesFiltradas);
+
+    comisionesFiltradas.forEach(comision => {
+      // Usar el horario completo como clave de agrupación
+      // Ejemplo: "Lun 07:00 a 08:30 - Jue 07:00 a 08:30"
+      const horarioCompleto = comision.horario?.trim();
+      
+      console.log(`🔍 DEBUG: Procesando comisión "${comision.actividad}" con horario: "${horarioCompleto}"`);
+      
+      // Validar que el horario sea válido y no sea el nombre del docente
+      if (horarioCompleto && 
+          horarioCompleto !== comision.docente && 
+          horarioCompleto.length > 0 &&
+          (horarioCompleto.includes('Lun') || 
+           horarioCompleto.includes('Mar') || 
+           horarioCompleto.includes('Mié') || 
+           horarioCompleto.includes('Jue') || 
+           horarioCompleto.includes('Vie') || 
+           horarioCompleto.includes('Sáb') || 
+           horarioCompleto.includes('Dom'))) {
+        
+        if (!grupos[horarioCompleto]) {
+          grupos[horarioCompleto] = [];
+          console.log(`🆕 DEBUG: Creando nuevo grupo para horario: "${horarioCompleto}"`);
+        }
+        grupos[horarioCompleto].push(comision);
+        console.log(`✅ DEBUG: Agregando comisión "${comision.actividad}" al grupo "${horarioCompleto}"`);
+      } else {
+        console.log(`⚠️ DEBUG: Comisión "${comision.actividad}" con horario inválido o sin horario: "${horarioCompleto}"`);
+        console.log(`⚠️ DEBUG: Docente de esta comisión: "${comision.docente}"`);
+      }
+    });
+
+    console.log('🔍 DEBUG: Grupos creados:', grupos);
+
+    // Ordenar los grupos por el primer día que aparece en el horario
+    const ordenDias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const gruposOrdenados: { [key: string]: Comision[] } = {};
+    
+    // Ordenar las claves de grupo
+    const clavesOrdenadas = Object.keys(grupos).sort((a, b) => {
+      // Extraer el primer día de cada horario
+      const primerDiaA = extraerDiaDelHorario(a);
+      const primerDiaB = extraerDiaDelHorario(b);
+      
+      if (primerDiaA && primerDiaB) {
+        const indiceDiaA = ordenDias.indexOf(primerDiaA);
+        const indiceDiaB = ordenDias.indexOf(primerDiaB);
+        
+        if (indiceDiaA !== indiceDiaB) {
+          return indiceDiaA - indiceDiaB;
+        }
+      }
+      
+      // Si es el mismo día o no se puede determinar, ordenar alfabéticamente por horario
+      return a.localeCompare(b);
+    });
+    
+    clavesOrdenadas.forEach(clave => {
+      gruposOrdenados[clave] = grupos[clave];
+    });
+
+    console.log('🔍 DEBUG: Grupos ordenados:', gruposOrdenados);
+    return gruposOrdenados;
+  };
+
+  // Función para extraer el día del horario
+  const extraerDiaDelHorario = (horario: string): string | null => {
+    const dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    for (const dia of dias) {
+      if (horario.includes(dia)) {
+        return dia;
+      }
+    }
+    return null;
+  };
+
+  // Función para obtener el nombre completo del día
+  const obtenerNombreDia = (dia: string): string => {
+    const nombresDias: { [key: string]: string } = {
+      'Lun': 'Lunes',
+      'Mar': 'Martes',
+      'Mié': 'Miércoles',
+      'Jue': 'Jueves',
+      'Vie': 'Viernes',
+      'Sáb': 'Sábado',
+      'Dom': 'Domingo'
+    };
+    return nombresDias[dia] || dia;
+  };
+
   return (
     <div className="min-vh-100" style={{ backgroundColor: '#f5f5f5' }}>
+      {/* Estilos CSS personalizados */}
+      <style>{customStyles}</style>
+      
       {/* Navigation Bar */}
       <Navigation currentPage="comisiones" />
 
@@ -333,10 +452,10 @@ export default function Comisiones() {
         <div className="row">
           <div className="col-12">
             <div className="card shadow-sm">
-              <div className="card-header bg-white">
+              <div className="card-header text-white" style={{ backgroundColor: '#FD8200' }}>
                 <div className="d-flex justify-content-between align-items-center">
                   <h4 className="mb-0">
-                    <i className="fas fa-users me-2 text-primary"></i>
+                    <i className="fas fa-users me-2 text-white"></i>
                     Comisiones
                   </h4>
                   <div className="d-flex gap-2">
@@ -395,7 +514,7 @@ export default function Comisiones() {
                     </button>
                   </div>
                   
-                  <div className="row g-3">
+                                    <div className="row g-3">
                     <div className="col-md-2">
                       <input
                         type="text"
@@ -442,15 +561,6 @@ export default function Comisiones() {
                       />
                     </div>
                     <div className="col-md-2">
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        placeholder="Comisión"
-                        value={filtros.comision}
-                        onChange={(e) => setFiltros({...filtros, comision: e.target.value})}
-                      />
-                    </div>
-                    <div className="col-md-2">
                       <select
                         className="form-select form-select-sm"
                         value={filtros.realizada}
@@ -463,206 +573,280 @@ export default function Comisiones() {
                     </div>
                   </div>
                   
-                  {/* Filtro de días de la semana */}
+                  {/* Segunda fila de filtros */}
                   <div className="row g-3 mt-2">
-                    <div className="col-12">
-                      <label className="form-label small text-muted mb-2">
-                        <i className="fas fa-calendar-week me-1"></i>
-                        Filtrar por días de la semana:
-                      </label>
-                      <div className="d-flex flex-wrap gap-2">
-                        {['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'].map(dia => (
-                          <div key={dia} className="form-check form-check-inline">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`dia-${dia}`}
-                              checked={filtros.dias.includes(dia)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setFiltros(prev => ({
-                                    ...prev,
-                                    dias: [...prev.dias, dia]
-                                  }));
-                                } else {
-                                  setFiltros(prev => ({
-                                    ...prev,
-                                    dias: prev.dias.filter(d => d !== dia)
-                                  }));
-                                }
-                              }}
-                            />
-                            <label className="form-check-label small" htmlFor={`dia-${dia}`}>
-                              {dia}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                      {filtros.dias.length > 0 && (
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary btn-sm mt-2"
-                          onClick={() => setFiltros(prev => ({ ...prev, dias: [] }))}
-                        >
-                          <i className="fas fa-times me-1"></i>
-                          Limpiar días
-                        </button>
-                      )}
+                    <div className="col-md-3">
+                      <select
+                        className="form-select form-select-sm"
+                        value={filtros.diaSemana}
+                        onChange={(e) => setFiltros({...filtros, diaSemana: e.target.value})}
+                      >
+                        <option value="todos">Todos los días</option>
+                        <option value="Lun">Lunes</option>
+                        <option value="Mar">Martes</option>
+                        <option value="Mié">Miércoles</option>
+                        <option value="Jue">Jueves</option>
+                        <option value="Vie">Viernes</option>
+                        <option value="Sáb">Sábado</option>
+                        <option value="Dom">Domingo</option>
+                      </select>
+                    </div>
+                    <div className="col-md-3">
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="Horario específico (ej: 14:00, 15:30)"
+                        value={filtros.horario}
+                        onChange={(e) => setFiltros({...filtros, horario: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Segunda fila de filtros */}
+                  <div className="row g-3 mt-2">
+                    <div className="col-md-3">
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="Horario específico (ej: 14:00, 15:30)"
+                        value={filtros.horario}
+                        onChange={(e) => setFiltros({...filtros, horario: e.target.value})}
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Tabla de comisiones agrupadas por horario */}
+                {/* Botón para alternar vista */}
+                <div className="mb-3 d-flex justify-content-between align-items-center">
+                  <div>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${vistaAgrupada ? 'btn-primary' : 'btn-outline-primary'}`}
+                      onClick={() => setVistaAgrupada(true)}
+                    >
+                      <i className="fas fa-layer-group me-1"></i>
+                      Vista Agrupada
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ms-2 ${!vistaAgrupada ? 'btn-primary' : 'btn-outline-primary'}`}
+                      onClick={() => setVistaAgrupada(false)}
+                    >
+                      <i className="fas fa-list me-1"></i>
+                      Vista Simple
+                    </button>
+                  </div>
+                  <div className="text-muted small">
+                    {vistaAgrupada ? 'Agrupadas por horario completo (días y horarios)' : 'Lista simple'}
+                  </div>
+                </div>
+
+                {/* Tabla de comisiones */}
                 <div className="table-responsive">
-                  {isLoading ? (
-                    <div className="text-center py-4">
-                      <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Cargando...</span>
-                      </div>
-                    </div>
-                  ) : (
-                    // Agrupar comisiones por horario
-                    (() => {
-                      console.log('🚀 Iniciando agrupación de comisiones...');
-                      console.log('📋 Comisiones a agrupar:', comisionesFiltradasYOrdenadas());
-                      
-                      const comisionesAgrupadas = comisionesFiltradasYOrdenadas().reduce((grupos, comision) => {
-                        const horario = comision.horario;
-                        if (!grupos[horario]) {
-                          grupos[horario] = [];
-                        }
-                        grupos[horario].push(comision);
-                        return grupos;
-                      }, {} as Record<string, typeof comisiones>);
-
-                      console.log('🔍 Comisiones agrupadas por horario:', comisionesAgrupadas);
-
-                      // Ordenar horarios
-                      const horariosOrdenados = Object.keys(comisionesAgrupadas).sort((a, b) => {
-                        // Ordenar por día de la semana y luego por hora
-                        const diasSemana = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
-                        const diaA = a.split(' ')[0];
-                        const diaB = b.split(' ')[0];
-                        const indiceA = diasSemana.indexOf(diaA);
-                        const indiceB = diasSemana.indexOf(diaB);
-                        
-                        if (indiceA !== indiceB) {
-                          return indiceA - indiceB;
-                        }
-                        
-                        // Si es el mismo día, ordenar por hora
-                        const horaA = a.match(/(\d{1,2}):(\d{2})/);
-                        const horaB = b.match(/(\d{1,2}):(\d{2})/);
-                        if (horaA && horaB) {
-                          const minutosA = parseInt(horaA[1]) * 60 + parseInt(horaA[2]);
-                          const minutosB = parseInt(horaB[1]) * 60 + parseInt(horaB[2]);
-                          return minutosA - minutosB;
-                        }
-                        return a.localeCompare(b);
-                      });
-
-                      console.log('🕐 Horarios ordenados:', horariosOrdenados);
-
-                      if (horariosOrdenados.length === 0) {
-                        return <div className="text-center py-4 text-muted">No hay comisiones para mostrar</div>;
-                      }
-
-                      return horariosOrdenados.map(horario => (
-                        <div key={horario} className="mb-4">
-                          <div className="card border-primary">
-                            <div className="card-header bg-primary text-white">
-                              <h6 className="mb-0">
-                                <i className="fas fa-clock me-2"></i>
-                                <strong>{horario}</strong>
-                                <span className="badge bg-light text-primary ms-2">
-                                  {comisionesAgrupadas[horario].length} actividad{comisionesAgrupadas[horario].length !== 1 ? 'es' : ''}
-                                </span>
-                              </h6>
+                  <table className="table table-hover table-sm">
+                    <thead className="table-light">
+                      <tr>
+                        <th 
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => ordenarComisiones('periodo')}
+                        >
+                          Período
+                          {ordenamiento.campo === 'periodo' && (
+                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
+                          )}
+                        </th>
+                        <th 
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => ordenarComisiones('actividad')}
+                        >
+                          Actividad
+                          {ordenamiento.campo === 'actividad' && (
+                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
+                          )}
+                        </th>
+                        <th 
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => ordenarComisiones('modalidad')}
+                        >
+                          Modalidad
+                          {ordenamiento.campo === 'modalidad' && (
+                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
+                          )}
+                        </th>
+                        <th 
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => ordenarComisiones('docente')}
+                        >
+                          Docente
+                          {ordenamiento.campo === 'docente' && (
+                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
+                          )}
+                        </th>
+                        <th 
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => ordenarComisiones('horario')}
+                        >
+                          Horario
+                          {ordenamiento.campo === 'horario' && (
+                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
+                          )}
+                        </th>
+                        <th 
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => ordenarComisiones('aula')}
+                        >
+                          Aula
+                          {ordenamiento.campo === 'aula' && (
+                            <i className={`fas fa-sort-${ordenamiento.direccion === 'asc' ? 'up' : 'down'} ms-1`}></i>
+                          )}
+                        </th>
+                        <th>Realizada</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {isLoading ? (
+                        <tr>
+                          <td colSpan={8} className="text-center py-4">
+                            <div className="spinner-border text-primary" role="status">
+                              <span className="visually-hidden">Cargando...</span>
                             </div>
-                            <div className="card-body p-0">
-                              <table className="table table-sm table-hover mb-0">
-                                <thead className="table-light">
-                                  <tr>
-                                    <th>Período</th>
-                                    <th>Actividad</th>
-                                    <th>Aula</th>
-                                    <th>Realizada</th>
-                                    <th>Acciones</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {comisionesAgrupadas[horario].map((comision) => (
-                                    <tr key={comision.id}>
-                                      <td>{comision.periodo}</td>
-                                      <td>{comision.actividad}</td>
-                                      <td>{comision.aula}</td>
-                                      <td>
-                                        <input
-                                          type="checkbox"
-                                          checked={comision.realizada || false}
-                                          onChange={(e) => {
-                                            if (!comision.id) {
-                                              console.error('❌ Comisión sin ID:', comision);
-                                              setError('Error: Comisión sin ID válido');
-                                              return;
-                                            }
-                                            handleRealizadaChange(comision.id, e.target.checked);
-                                          }}
-                                          className="form-check-input"
-                                          title={comision.realizada ? 'Marcar como pendiente' : 'Marcar como realizada'}
-                                          disabled={!comision.id}
-                                        />
-                                      </td>
-                                      <td>
-                                        <div className="btn-group btn-group-sm" role="group">
-                                          <button
-                                            className="btn btn-outline-primary"
-                                            onClick={() => editarComision(comision)}
-                                            title="Editar comisión"
-                                          >
-                                            <i className="fas fa-edit"></i>
-                                          </button>
-                                          <button
-                                            className="btn btn-outline-danger"
-                                            onClick={() => eliminarComision(comision.id!)}
-                                            title="Eliminar comisión"
-                                          >
-                                            <i className="fas fa-trash"></i>
-                                          </button>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        </div>
-                      ));
-                    })()
-                  )}
+                          </td>
+                        </tr>
+                      ) : vistaAgrupada ? (
+                        // Renderizar comisiones agrupadas por horario
+                        Object.entries(comisionesAgrupadasPorHorario()).length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="text-center py-4 text-muted">
+                              No se encontraron comisiones para agrupar
+                            </td>
+                          </tr>
+                        ) : (
+                          Object.entries(comisionesAgrupadasPorHorario()).map(([clave, comisionesDelDia]) => (
+                            <React.Fragment key={clave}>
+                              {/* Fila de encabezado del horario */}
+                                      <tr className="table-warning">
+          <td colSpan={8} className="fw-bold text-white custom-orange-header" style={{ backgroundColor: '#FD8200' }}>
+            <i className="fas fa-clock me-2 text-white"></i>
+            <span className="text-white">{clave}</span>
+            <span className="badge bg-white" style={{ color: '#FD8200' }}>
+              {comisionesDelDia.length} comisión{comisionesDelDia.length !== 1 ? 'es' : ''}
+            </span>
+          </td>
+        </tr>
+                              {/* Comisiones del día */}
+                              {comisionesDelDia.map((comision) => (
+                                <tr key={comision.id}>
+                                  <td>{comision.periodo}</td>
+                                  <td>{comision.actividad}</td>
+                                  <td>{comision.modalidad}</td>
+                                  <td>{comision.docente}</td>
+                                  <td>{comision.horario}</td>
+                                  <td>{comision.aula}</td>
+                                  <td>
+                                    <input
+                                      type="checkbox"
+                                      checked={comision.realizada || false}
+                                      onChange={(e) => {
+                                        if (!comision.id) {
+                                          console.error('❌ Comisión sin ID:', comision);
+                                          setError('Error: Comisión sin ID válido');
+                                          return;
+                                        }
+                                        handleRealizadaChange(comision.id, e.target.checked);
+                                      }}
+                                      className="form-check-input"
+                                      title={comision.realizada ? 'Marcar como pendiente' : 'Marcar como realizada'}
+                                      disabled={!comision.id}
+                                    />
+                                  </td>
+                                  <td>
+                                    <div className="btn-group btn-group-sm" role="group">
+                                      <button
+                                        className="btn btn-outline-primary"
+                                        onClick={() => editarComision(comision)}
+                                        title="Editar comisión"
+                                      >
+                                        <i className="fas fa-edit"></i>
+                                      </button>
+                                      <button
+                                        className="btn btn-outline-danger"
+                                        onClick={() => eliminarComision(comision.id!)}
+                                        title="Eliminar comisión"
+                                      >
+                                        <i className="fas fa-trash"></i>
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </React.Fragment>
+                          ))
+                        )
+                      ) : (
+                        // Renderizar comisiones en lista simple
+                        comisionesFiltradasYOrdenadas().length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="text-center py-4 text-muted">
+                              No se encontraron comisiones
+                            </td>
+                          </tr>
+                        ) : (
+                          comisionesFiltradasYOrdenadas().map((comision) => (
+                            <tr key={comision.id}>
+                              <td>{comision.periodo}</td>
+                              <td>{comision.actividad}</td>
+                              <td>{comision.modalidad}</td>
+                              <td>{comision.docente}</td>
+                              <td>{comision.horario}</td>
+                              <td>{comision.aula}</td>
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  checked={comision.realizada || false}
+                                  onChange={(e) => {
+                                    if (!comision.id) {
+                                      console.error('❌ Comisión sin ID:', comision);
+                                      setError('Error: Comisión sin ID válido');
+                                      return;
+                                    }
+                                    handleRealizadaChange(comision.id, e.target.checked);
+                                  }}
+                                  className="form-check-input"
+                                  title={comision.realizada ? 'Marcar como pendiente' : 'Marcar como realizada'}
+                                  disabled={!comision.id}
+                                />
+                              </td>
+                              <td>
+                                <div className="btn-group btn-group-sm" role="group">
+                                  <button
+                                    className="btn btn-outline-primary"
+                                    onClick={() => editarComision(comision)}
+                                    title="Editar comisión"
+                                  >
+                                    <i className="fas fa-edit"></i>
+                                  </button>
+                                  <button
+                                    className="btn btn-outline-danger"
+                                    onClick={() => eliminarComision(comision.id!)}
+                                    title="Eliminar comisión"
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )
+                      )}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* Información de filtros */}
                 <div className="mt-3 text-muted small">
-                  Mostrando {(() => {
-                    const comisionesAgrupadas = comisionesFiltradasYOrdenadas().reduce((grupos, comision) => {
-                      const horario = comision.horario;
-                      if (!grupos[horario]) {
-                        grupos[horario] = [];
-                      }
-                      grupos[horario].push(comision);
-                      return grupos;
-                    }, {} as Record<string, typeof comisiones>);
-                    return Object.keys(comisionesAgrupadas).length;
-                  })()} horarios con {comisionesFiltradasYOrdenadas().length} actividades
+                  Mostrando {comisionesFiltradasYOrdenadas().length} de {comisiones.length} comisiones
                   {Object.values(filtros).some(f => f !== '' && f !== 'todos') && ' (filtradas)'}
-                  {comisiones.filter(c => c.aula === 'N/A' || c.aula === 'n/a' || c.aula === 'N/a').length > 0 && 
-                    ` • ${comisiones.filter(c => c.aula === 'N/A' || c.aula === 'n/a' || c.aula === 'N/a').length} registros con aula N/A ocultos automáticamente`
-                  }
-                  {comisiones.filter(c => !/^(Lun|Mar|Mie|Jue|Vie|Sab|Dom)\s+\d{1,2}:\d{2}/i.test(c.horario)).length > 0 && 
-                    ` • ${comisiones.filter(c => !/^(Lun|Mar|Mie|Jue|Vie|Sab|Dom)\s+\d{1,2}:\d{2}/i.test(c.horario)).length} registros con horario inválido ocultos automáticamente`
-                  }
                 </div>
               </div>
             </div>
@@ -700,16 +884,6 @@ export default function Comisiones() {
                         className="form-control"
                         value={formData.periodo}
                         onChange={(e) => setFormData({...formData, periodo: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Comisión</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={formData.comision}
-                        onChange={(e) => setFormData({...formData, comision: e.target.value})}
                         required
                       />
                     </div>

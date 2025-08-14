@@ -51,8 +51,7 @@ export default function CompararPDFs() {
     modalidad: '',
     docente: '',
     horario: '',
-    aula: '',
-    comision: ''
+    aula: ''
   });
   
   const fileInput1Ref = useRef<HTMLInputElement>(null);
@@ -177,7 +176,7 @@ export default function CompararPDFs() {
     e.preventDefault();
     
     if (!formData.periodo || !formData.actividad || !formData.modalidad || 
-        !formData.docente || !formData.horario || !formData.aula || !formData.comision) {
+        !formData.docente || !formData.horario || !formData.aula) {
       alert('Por favor completa todos los campos');
       return;
     }
@@ -194,8 +193,7 @@ export default function CompararPDFs() {
         modalidad: '',
         docente: '',
         horario: '',
-        aula: '',
-        comision: ''
+        aula: ''
       });
     } catch (error) {
       alert('Error al guardar la comisión: ' + error);
@@ -212,8 +210,7 @@ export default function CompararPDFs() {
       modalidad: comision.archivo1.modalidad || comision.archivo2.modalidad || '',
       docente: comision.archivo1.docente || comision.archivo2.docente || '',
       horario: comision.archivo1.horario || comision.archivo2.horario || '',
-      aula: comision.archivo1.aula || comision.archivo2.aula || '',
-      comision: comision.archivo1.comision || comision.archivo2.comision || ''
+      aula: comision.archivo1.aula || comision.archivo2.aula || ''
     });
     setMostrarFormularioGuardar(true);
   }, []);
@@ -237,21 +234,14 @@ export default function CompararPDFs() {
         try {
           // Log de debug para ver qué datos tiene el resultado
           console.log('🔍 Resultado a guardar:', resultado);
-          console.log('🔍 Tipo de resultado:', typeof resultado);
-          console.log('🔍 Tipo de resultado.archivo1:', typeof resultado.archivo1);
-          console.log('🔍 resultado.archivo1 completo:', resultado.archivo1);
           console.log('🏫 Campo aula del resultado:', resultado.archivo1.aula);
-          console.log('🔢 Campo comision del resultado:', resultado.archivo1.comision);
-          console.log('🔢 Tipo del campo comision:', typeof resultado.archivo1.comision);
-          console.log('🔢 Longitud del campo comision:', resultado.archivo1.comision ? resultado.archivo1.comision.length : 'undefined');
           console.log('📋 Todos los campos del archivo1:', {
             periodoLectivo: resultado.archivo1.periodoLectivo,
             actividad: resultado.archivo1.actividad,
             modalidad: resultado.archivo1.modalidad,
             docente: resultado.archivo1.docente,
             horario: resultado.archivo1.horario,
-            aula: resultado.archivo1.aula,
-            comision: resultado.archivo1.comision
+            aula: resultado.archivo1.aula
           });
 
           const datosComision = {
@@ -260,8 +250,7 @@ export default function CompararPDFs() {
             modalidad: resultado.archivo1.modalidad || '',
             docente: resultado.archivo1.docente || '',
             horario: resultado.archivo1.horario || '',
-            aula: resultado.archivo1.aula || '',
-            comision: resultado.archivo1.comision || ''
+            aula: resultado.archivo1.aula || ''
           };
 
           // Log de debug para ver qué datos se van a enviar
@@ -275,11 +264,10 @@ export default function CompararPDFs() {
           console.log('  - docente:', datosComision.docente ? '✅' : '❌');
           console.log('  - horario:', datosComision.horario ? '✅' : '❌');
           console.log('  - aula:', datosComision.aula ? '✅' : '❌');
-          console.log('  - comision:', datosComision.comision ? '✅' : '❌');
 
           // Verificar que todos los campos requeridos estén presentes
           if (datosComision.periodo && datosComision.actividad && datosComision.modalidad && 
-              datosComision.docente && datosComision.horario && datosComision.aula && datosComision.comision) {
+              datosComision.docente && datosComision.horario && datosComision.aula) {
             console.log('✅ Todos los campos están presentes, guardando comisión...');
             await ComisionService.create(datosComision);
             guardadas++;
@@ -296,7 +284,6 @@ export default function CompararPDFs() {
             if (!datosComision.docente) camposFaltantes.push('docente');
             if (!datosComision.horario) camposFaltantes.push('horario');
             if (!datosComision.aula) camposFaltantes.push('aula');
-            if (!datosComision.comision) camposFaltantes.push('comision');
             
             console.log('❌ Campos faltantes:', camposFaltantes);
           }

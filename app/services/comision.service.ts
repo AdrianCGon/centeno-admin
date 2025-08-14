@@ -8,7 +8,6 @@ export interface Comision {
   docente: string;
   horario: string;
   aula: string;
-  comision: string;
   realizada?: boolean;
   fechaCreacion?: Date;
   fechaActualizacion?: Date;
@@ -21,7 +20,6 @@ export interface CreateComisionRequest {
   docente: string;
   horario: string;
   aula: string;
-  comision: string;
 }
 
 export class ComisionService {
@@ -54,7 +52,15 @@ export class ComisionService {
     }
 
     const data = await response.json();
-    return data.data || [];
+    
+    // Mapear _id a id para compatibilidad con el frontend
+    const comisionesMapeadas = (data.data || []).map((comision: any) => ({
+      ...comision,
+      id: comision._id, // Mapear _id del backend a id del frontend
+      _id: undefined // Eliminar _id para evitar confusión
+    }));
+    
+    return comisionesMapeadas;
   }
 
   static async updateRealizada(id: string, realizada: boolean): Promise<Comision> {
@@ -72,7 +78,14 @@ export class ComisionService {
       throw new Error(error.message || 'Error al actualizar el estado de la comisión');
     }
 
-    return response.json();
+    const data = await response.json();
+    
+    // Mapear _id a id para compatibilidad con el frontend
+    return {
+      ...data.data,
+      id: data.data._id, // Mapear _id del backend a id del frontend
+      _id: undefined // Eliminar _id para evitar confusión
+    };
   }
 
   static async deleteAll(): Promise<{ deletedCount: number; message: string }> {
