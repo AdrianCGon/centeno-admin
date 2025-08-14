@@ -38,7 +38,8 @@ export default function Comisiones() {
     horario: '',
     aula: '',
     comision: '',
-    realizada: 'todos'
+    realizada: 'todos',
+    dias: [] as string[] // Nuevo filtro para días
   });
 
   useEffect(() => {
@@ -224,7 +225,8 @@ export default function Comisiones() {
       horario: '',
       aula: '',
       comision: '',
-      realizada: 'todos'
+      realizada: 'todos',
+      dias: []
     });
   };
 
@@ -287,6 +289,14 @@ export default function Comisiones() {
     if (filtros.realizada !== 'todos') {
       const realizada = filtros.realizada === 'true';
       resultado = resultado.filter(c => c.realizada === realizada);
+    }
+
+    // Aplicar filtros de días
+    if (filtros.dias.length > 0) {
+      resultado = resultado.filter(c => {
+        const diaComision = c.horario.split(' ')[0];
+        return filtros.dias.includes(diaComision);
+      });
     }
 
     // Aplicar ordenamiento
@@ -450,6 +460,54 @@ export default function Comisiones() {
                         <option value="true">Realizadas</option>
                         <option value="false">Pendientes</option>
                       </select>
+                    </div>
+                  </div>
+                  
+                  {/* Filtro de días de la semana */}
+                  <div className="row g-3 mt-2">
+                    <div className="col-12">
+                      <label className="form-label small text-muted mb-2">
+                        <i className="fas fa-calendar-week me-1"></i>
+                        Filtrar por días de la semana:
+                      </label>
+                      <div className="d-flex flex-wrap gap-2">
+                        {['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'].map(dia => (
+                          <div key={dia} className="form-check form-check-inline">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`dia-${dia}`}
+                              checked={filtros.dias.includes(dia)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFiltros(prev => ({
+                                    ...prev,
+                                    dias: [...prev.dias, dia]
+                                  }));
+                                } else {
+                                  setFiltros(prev => ({
+                                    ...prev,
+                                    dias: prev.dias.filter(d => d !== dia)
+                                  }));
+                                }
+                              }}
+                            />
+                            <label className="form-check-label small" htmlFor={`dia-${dia}`}>
+                              {dia}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      {filtros.dias.length > 0 && (
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm mt-2"
+                          onClick={() => setFiltros(prev => ({ ...prev, dias: [] }))}
+                        >
+                          <i className="fas fa-times me-1"></i>
+                          Limpiar días
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
