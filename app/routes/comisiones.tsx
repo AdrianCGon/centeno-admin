@@ -408,7 +408,26 @@ export default function Comisiones() {
     });
     
     clavesOrdenadas.forEach(clave => {
-      gruposOrdenados[clave] = grupos[clave];
+      // Ordenar las comisiones dentro de cada grupo por aula (de menor a mayor)
+      const comisionesOrdenadas = grupos[clave].sort((a, b) => {
+        // Extraer números de aula para comparación numérica
+        const aulaA = parseInt(a.aula) || 0;
+        const aulaB = parseInt(b.aula) || 0;
+        
+        // Si ambas son números, ordenar numéricamente
+        if (!isNaN(aulaA) && !isNaN(aulaB)) {
+          return aulaA - aulaB;
+        }
+        
+        // Si una es número y otra no, la numérica va primero
+        if (!isNaN(aulaA) && isNaN(aulaB)) return -1;
+        if (isNaN(aulaA) && !isNaN(aulaB)) return 1;
+        
+        // Si ambas son texto, ordenar alfabéticamente
+        return (a.aula || '').localeCompare(b.aula || '');
+      });
+      
+      gruposOrdenados[clave] = comisionesOrdenadas;
     });
 
     console.log('🔍 DEBUG: Grupos ordenados:', gruposOrdenados);
@@ -438,6 +457,72 @@ export default function Comisiones() {
       'Dom': 'Domingo'
     };
     return nombresDias[dia] || dia;
+  };
+
+  // Función para clasificar aulas por piso
+  const clasificarAulasPorPiso = (aulas: string[]): { [piso: string]: string[] } => {
+    const pisos: { [piso: string]: string[] } = {
+      'PB': [],
+      '1er piso': [],
+      '2do piso': [],
+      '3er piso': []
+    };
+
+    aulas.forEach(aula => {
+      const aulaNum = parseInt(aula);
+      if (!isNaN(aulaNum)) {
+        if (aulaNum <= 99) {
+          pisos['PB'].push(aula);
+        } else if (aulaNum <= 199) {
+          pisos['1er piso'].push(aula);
+        } else if (aulaNum <= 299) {
+          pisos['2do piso'].push(aula);
+        } else if (aulaNum <= 399) {
+          pisos['3er piso'].push(aula);
+        }
+      } else {
+        // Para aulas no numéricas, ir al PB
+        pisos['PB'].push(aula);
+      }
+    });
+
+    // Ordenar aulas numéricamente dentro de cada piso
+    Object.keys(pisos).forEach(piso => {
+      pisos[piso].sort((a, b) => {
+        const numA = parseInt(a) || 0;
+        const numB = parseInt(b) || 0;
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numA - numB;
+        }
+        return a.localeCompare(b);
+      });
+    });
+
+    return pisos;
+  };
+
+  // Función para clasificar aulas por piso
+  const clasificarAulaPorPiso = (aula: string): { piso: string; orden: number } => {
+    const aulaNum = parseInt(aula);
+    
+    if (isNaN(aulaNum)) {
+      // Aulas no numéricas van al final
+      return { piso: 'Otros', orden: 999 };
+    }
+    
+    if (aulaNum <= 99) {
+      return { piso: 'PB', orden: 1 };
+    } else if (aulaNum <= 199) {
+      return { piso: '1er Piso', orden: 2 };
+    } else if (aulaNum <= 299) {
+      return { piso: '2do Piso', orden: 3 };
+    } else if (aulaNum <= 399) {
+      return { piso: '3er Piso', orden: 4 };
+    } else if (aulaNum <= 499) {
+      return { piso: '4to Piso', orden: 5 };
+    } else {
+      return { piso: '5to Piso+', orden: 6 };
+    }
   };
 
   return (
@@ -734,6 +819,31 @@ export default function Comisiones() {
             </span>
           </td>
         </tr>
+                              {/* Resumen de aulas por piso */}
+                              <tr className="table-light">
+                                <td colSpan={8}>
+                                  {(() => {
+                                    const aulas = comisionesDelDia.map(c => c.aula).filter(aula => aula && aula !== 'N/A');
+                                    const aulasPorPiso = clasificarAulasPorPiso(aulas);
+                                    
+                                    return (
+                                      <div className="p-2">
+                                        {Object.entries(aulasPorPiso).map(([piso, aulasDelPiso]) => {
+                                          if (aulasDelPiso.length === 0) return null;
+                                          
+                                          return (
+                                            <div key={piso} className="mb-2">
+                                              <strong className="text-primary">{piso}:</strong>
+                                              <span className="ms-2">{aulasDelPiso.join(' ')}</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    );
+                                  })()}
+                                </td>
+                              </tr>
+                              
                               {/* Comisiones del día */}
                               {comisionesDelDia.map((comision) => (
                                 <tr key={comision.id}>
