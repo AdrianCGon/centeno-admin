@@ -307,6 +307,10 @@ export default function Comisiones() {
     // Filtro por día de la semana
     if (filtros.diaSemana !== 'todos') {
       resultado = resultado.filter(c => {
+        if (filtros.diaSemana === 'Mié') {
+          // Para miércoles, buscar tanto "Mié" como "Mie"
+          return c.horario.includes('Mié') || c.horario.includes('Mie');
+        }
         // Buscar si el horario contiene el día seleccionado
         return c.horario.includes(filtros.diaSemana);
       });
@@ -365,6 +369,7 @@ export default function Comisiones() {
           (horarioCompleto.includes('Lun') || 
            horarioCompleto.includes('Mar') || 
            horarioCompleto.includes('Mié') || 
+           horarioCompleto.includes('Mie') || 
            horarioCompleto.includes('Jue') || 
            horarioCompleto.includes('Vie') || 
            horarioCompleto.includes('Sáb') || 
@@ -438,7 +443,12 @@ export default function Comisiones() {
   const extraerDiaDelHorario = (horario: string): string | null => {
     const dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     for (const dia of dias) {
-      if (horario.includes(dia)) {
+      if (dia === 'Mié') {
+        // Para miércoles, buscar tanto "Mié" como "Mie"
+        if (horario.includes('Mié') || horario.includes('Mie')) {
+          return dia;
+        }
+      } else if (horario.includes(dia)) {
         return dia;
       }
     }
@@ -452,7 +462,18 @@ export default function Comisiones() {
     const dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     
     dias.forEach(dia => {
-      const comisionesDelDia = comisiones.filter(c => c.horario.includes(dia));
+      // Buscar comisiones que contengan el día, considerando variaciones
+      let comisionesDelDia: Comision[] = [];
+      
+      if (dia === 'Mié') {
+        // Para miércoles, buscar tanto "Mié" como "Mie"
+        comisionesDelDia = comisiones.filter(c => 
+          c.horario.includes('Mié') || c.horario.includes('Mie')
+        );
+      } else {
+        comisionesDelDia = comisiones.filter(c => c.horario.includes(dia));
+      }
+      
       const total = comisionesDelDia.length;
       const realizadas = comisionesDelDia.filter(c => c.realizada).length;
       const pendientes = total - realizadas;
