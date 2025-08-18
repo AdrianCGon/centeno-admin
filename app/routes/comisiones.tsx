@@ -445,18 +445,23 @@ export default function Comisiones() {
     return null;
   };
 
-  // Función para obtener el nombre completo del día
-  const obtenerNombreDia = (dia: string): string => {
-    const nombresDias: { [key: string]: string } = {
-      'Lun': 'Lunes',
-      'Mar': 'Martes',
-      'Mié': 'Miércoles',
-      'Jue': 'Jueves',
-      'Vie': 'Viernes',
-      'Sáb': 'Sábado',
-      'Dom': 'Domingo'
-    };
-    return nombresDias[dia] || dia;
+  // Función para calcular estadísticas por día
+  const calcularEstadisticasPorDia = () => {
+    const estadisticas: { [dia: string]: { total: number; realizadas: number; pendientes: number; porcentaje: number } } = {};
+    
+    const dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    
+    dias.forEach(dia => {
+      const comisionesDelDia = comisiones.filter(c => c.horario.includes(dia));
+      const total = comisionesDelDia.length;
+      const realizadas = comisionesDelDia.filter(c => c.realizada).length;
+      const pendientes = total - realizadas;
+      const porcentaje = total > 0 ? Math.round((realizadas / total) * 100) : 0;
+      
+      estadisticas[dia] = { total, realizadas, pendientes, porcentaje };
+    });
+    
+    return estadisticas;
   };
 
   // Función para clasificar aulas por piso
@@ -499,6 +504,20 @@ export default function Comisiones() {
     });
 
     return pisos;
+  };
+
+  // Función para obtener el nombre completo del día
+  const obtenerNombreDia = (dia: string): string => {
+    const nombresDias: { [key: string]: string } = {
+      'Lun': 'Lunes',
+      'Mar': 'Martes',
+      'Mié': 'Miércoles',
+      'Jue': 'Jueves',
+      'Vie': 'Viernes',
+      'Sáb': 'Sábado',
+      'Dom': 'Domingo'
+    };
+    return nombresDias[dia] || dia;
   };
 
   // Función para clasificar aulas por piso
@@ -581,6 +600,49 @@ export default function Comisiones() {
                     <button type="button" className="btn-close" onClick={() => setError(null)}></button>
                   </div>
                 )}
+
+                {/* Estadísticas por día */}
+                <div className="mb-4 p-3 border rounded" style={{ backgroundColor: '#f8f9fa' }}>
+                  <h6 className="mb-3">
+                    <i className="fas fa-chart-bar me-2 text-primary"></i>
+                    Estadísticas por Día
+                  </h6>
+                  <div className="row g-3">
+                    {Object.entries(calcularEstadisticasPorDia()).map(([dia, stats]) => {
+                      if (stats.total === 0) return null;
+                      
+                      return (
+                        <div key={dia} className="col-md-3 col-sm-6">
+                          <div className="card border-0 shadow-sm h-100">
+                            <div className="card-body text-center p-3">
+                              <h6 className="card-title text-muted mb-2">{obtenerNombreDia(dia)}</h6>
+                              <div className="d-flex justify-content-between align-items-center mb-2">
+                                <span className="badge bg-primary">{stats.total}</span>
+                                <span className="text-muted small">Total</span>
+                              </div>
+                              <div className="d-flex justify-content-between align-items-center mb-2">
+                                <span className="badge bg-success">{stats.realizadas}</span>
+                                <span className="text-muted small">Realizadas</span>
+                              </div>
+                              <div className="d-flex justify-content-between align-items-center mb-2">
+                                <span className="badge bg-warning">{stats.pendientes}</span>
+                                <span className="text-muted small">Pendientes</span>
+                              </div>
+                              <div className="progress" style={{ height: '8px' }}>
+                                <div 
+                                  className="progress-bar bg-success" 
+                                  style={{ width: `${stats.porcentaje}%` }}
+                                  title={`${stats.porcentaje}% completado`}
+                                ></div>
+                              </div>
+                              <small className="text-muted mt-1 d-block">{stats.porcentaje}% completado</small>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
                 {/* Filtros */}
                 <div className="mb-4 p-3 border rounded" style={{ backgroundColor: '#f8f9fa' }}>
